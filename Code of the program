@@ -1,0 +1,159 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <fstream>
+
+using namespace std;
+
+int globalToken = 1;
+
+class Person {
+protected:
+    string name;
+    int age;
+    int tokenNumber;
+
+public:
+    virtual int getPriority() const = 0;
+    virtual void display() const {
+        cout << "Token: " << tokenNumber << " | Name: " << name << " | Age: " << age << endl;
+    }
+    void setDetails(string n, int a) {
+        name = n;
+        age = a;
+        tokenNumber = globalToken++;
+    }
+    int getTokenNumber() const {
+        return tokenNumber;
+    }
+};
+
+class Student : public Person {
+public:
+    Student(string n, int a) {
+        setDetails(n, a);
+    }
+    int getPriority() const override {
+        return 2;
+    }
+};
+
+class SeniorCitizen : public Person {
+public:
+    SeniorCitizen(string n, int a) {
+        setDetails(n, a);
+    }
+    int getPriority() const override {
+        return 1;
+    }
+};
+
+class EmergencyCase : public Person {
+public:
+    EmergencyCase(string n, int a) {
+        setDetails(n, a);
+    }
+    int getPriority() const override {
+        return 0;
+    }
+};
+
+class QueueManager {
+private:
+    vector<Person*> queue;
+
+    static bool compare(Person* a, Person* b) {
+        return a->getPriority() < b->getPriority();
+    }
+
+public:
+    void addPerson(Person* p) {
+        queue.push_back(p);
+        sort(queue.begin(), queue.end(), compare);
+        cout << "Added to queue with token number: " << p->getTokenNumber() << endl;
+    }
+
+    void showQueue() {
+        if (queue.empty()) {
+            cout << "Queue is empty.\n";
+            return;
+        }
+        cout << "\n--- Current Queue ---\n";
+        for (auto person : queue) {
+            person->display();
+        }
+    }
+
+    void serveNext() {
+        if (queue.empty()) {
+            cout << "No one to serve.\n";
+            return;
+        }
+        cout << "\nServing: ";
+        queue.front()->display();
+        delete queue.front();
+        queue.erase(queue.begin());
+    }
+
+    void saveLogToFile() {
+        ofstream file("queue_log.txt", ios::app);
+        file << "\n--- Queue Log ---\n";
+        for (auto person : queue) {
+            file << "Token: " << person->getTokenNumber() << "\n";
+        }
+        file.close();
+        cout << "Queue log saved.\n";
+    }
+
+    ~QueueManager() {
+        for (auto person : queue) {
+            delete person;
+        }
+    }
+};
+
+int main() {
+    QueueManager qm;
+    int choice;
+
+    while (true) {
+        cout << "\n1. Add Student\n2. Add Senior Citizen\n3. Add Emergency Case\n4. Show Queue\n5. Serve Next\n6. Save Log\n7. Exit\nEnter choice: ";
+        cin >> choice;
+        cin.ignore();
+
+        if (choice == 7) break;
+
+        string name;
+        int age;
+
+        switch (choice) {
+            case 1:
+                cout << "Enter name: "; getline(cin, name);
+                cout << "Enter age: "; cin >> age;
+                qm.addPerson(new Student(name, age));
+                break;
+            case 2:
+                cout << "Enter name: "; getline(cin, name);
+                cout << "Enter age: "; cin >> age;
+                qm.addPerson(new SeniorCitizen(name, age));
+                break;
+            case 3:
+                cout << "Enter name: "; getline(cin, name);
+                cout << "Enter age: "; cin >> age;
+                qm.addPerson(new EmergencyCase(name, age));
+                break;
+            case 4:
+                qm.showQueue();
+                break;
+            case 5:
+                qm.serveNext();
+                break;
+            case 6:
+                qm.saveLogToFile();
+                break;
+            default:
+                cout << "Invalid choice.\n";
+        }
+    }
+    return 0;
+}
